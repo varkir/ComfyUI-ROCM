@@ -2,12 +2,12 @@
 # Menjalankan container ComfyUI ROCm. Tidak menimpa container yang sudah ada.
 #
 #   scripts/run.sh
-#   IMAGE=ghcr.io/varkir/comfyui:rocm scripts/run.sh
+#   IMAGE=localhost/lain:tag scripts/run.sh
 #   NAME=comfyui-test PORT=8189 NETWORK= scripts/run.sh   -> uji tanpa ganggu produksi
 set -euo pipefail
 
 BASE="${BASE:-/mnt/varkir/Podman/ComfyUI}"
-IMAGE="${IMAGE:-localhost/comfyui:rocm}"
+IMAGE="${IMAGE:-ghcr.io/varkir/comfyui:rocm}"
 NAME="${NAME:-comfyui}"
 PORT="${PORT:-8188}"
 NETWORK="${NETWORK-varkir}"

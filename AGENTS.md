@@ -9,7 +9,7 @@ Membangun dan menjalankan image **ComfyUI** berbasis **ROCm** untuk **AMD Radeon
 Alur kerja:
 
 1. Siapkan folder host (`scripts/setup-dirs.sh`).
-2. Build image lokal `localhost/comfyui:rocm` (`scripts/build.sh`).
+2. Build image `ghcr.io/varkir/comfyui:rocm` (`scripts/build.sh`).
 3. Jalankan container (`scripts/run.sh`) dan verifikasi (`scripts/verify.sh`) sampai **semua kriteria "Definition of Done"** lulus.
 4. **Baru setelah itu**: push repo ke GitHub dan push image ke `ghcr.io/varkir/comfyui:rocm`.
 
@@ -29,8 +29,7 @@ Jangan lompat ke langkah 4 sebelum langkah 3 lulus.
 | Workdir di container | `/opt/ComfyUI` |
 | Python di container | `/opt/venv/bin/python` (venv bawaan base image) |
 | Base image | `docker.io/rocm/pytorch:rocm7.2.4_ubuntu24.04_py3.12_pytorch_release_2.9.1` |
-| Image lokal | `localhost/comfyui:rocm` |
-| Image publik | `ghcr.io/varkir/comfyui:rocm` |
+| Image (build & publik) | `ghcr.io/varkir/comfyui:rocm` (satu tag saja) |
 | Repo GitHub | `https://github.com/varkir/ComfyUI-ROCM` (lisensi GPL-3.0) |
 
 Base image sengaja memakai varian **Python 3.12**: Python 3.10 EOL 31 Oktober 2026 dan ComfyUI sudah menampilkan peringatan. Versi torch tetap sama (2.9.1 ROCm 7.2.4).
@@ -39,8 +38,7 @@ Base image sengaja memakai varian **Python 3.12**: Python 3.10 EOL 31 Oktober 20
 
 Nama repository image OCI **harus huruf kecil**. `ghcr.io/varkir/ComfyUI:rocm` akan ditolak Podman (`repository name must be lowercase`).
 
-- Build lokal: `localhost/comfyui:rocm`.
-- Publikasi: `ghcr.io/varkir/comfyui:rocm`.
+- Build lokal langsung memakai nama `ghcr.io/varkir/comfyui:rocm`; tidak ada tag `localhost/...` atau tag tambahan.
 - Nama repo GitHub boleh huruf besar (`varkir/ComfyUI-ROCM`); label `org.opencontainers.image.source` menautkan package ke repo itu.
 
 ## Struktur repo
@@ -56,7 +54,7 @@ ComfyUI-ROCM/
 ├── .gitignore
 └── scripts/
     ├── setup-dirs.sh    # folder host + subfolder models
-    ├── build.sh         # build localhost/comfyui:rocm (+ tag/push opsional)
+    ├── build.sh         # build ghcr.io/varkir/comfyui:rocm (+ push opsional)
     ├── run.sh           # podman run dengan semua mount
     └── verify.sh        # cek Definition of Done
 ```
@@ -68,7 +66,7 @@ Semua script: `#!/usr/bin/env bash` + `set -euo pipefail`, idempoten (aman dijal
 Membuat `models custom_nodes user output input wildcards` di `/mnt/varkir/Podman/ComfyUI` beserta subfolder `models/` standar ComfyUI.
 
 - Daftar subfolder harus sesuai `folder_paths.py` di versi ComfyUI yang dipakai. Cek dari image:
-  `podman run --rm --entrypoint python localhost/comfyui:rocm -c "import folder_paths; print(sorted(folder_paths.folder_names_and_paths))"`.
+  `podman run --rm --entrypoint python ghcr.io/varkir/comfyui:rocm -c "import folder_paths; print(sorted(folder_paths.folder_names_and_paths))"`.
 - Permission (dijalankan manual oleh user bila perlu):
   ```bash
   sudo chown -R "$USER:$USER" /mnt/varkir/Podman/ComfyUI
@@ -78,7 +76,7 @@ Membuat `models custom_nodes user output input wildcards` di `/mnt/varkir/Podman
 
 ## 2. Containerfile
 
-- **Satu** `FROM` saja (base image ROCm). Jangan pernah `FROM localhost/comfyui:rocm` (self-reference, layer menumpuk, gagal di mesin baru).
+- **Satu** `FROM` saja (base image ROCm). Jangan pernah `FROM ghcr.io/varkir/comfyui:rocm` (self-reference, layer menumpuk, gagal di mesin baru).
 - `ENV HSA_OVERRIDE_GFX_VERSION=10.3.0 PYTHONUNBUFFERED=1 PIP_DISABLE_PIP_VERSION_CHECK=1 PIP_NO_CACHE_DIR=1 DEBIAN_FRONTEND=noninteractive`.
 - Paket OS: `git ca-certificates wget ffmpeg libgl1 libglib2.0-0 libgomp1 build-essential`, lalu `rm -rf /var/lib/apt/lists/*`.
 - **Torch ROCm dikunci** lewat `/opt/constraints.txt` (hasil `pip freeze` untuk `torch torchvision torchaudio triton apex`). Setiap `pip install` memakai `-c /opt/constraints.txt` sehingga tidak ada requirements yang bisa mengganti torch dengan build CUDA/CPU.
@@ -92,7 +90,7 @@ Membuat `models custom_nodes user output input wildcards` di `/mnt/varkir/Podman
 
 ### Update image
 
-Rebuild dari Containerfile utama, bukan stacking `FROM localhost/comfyui:rocm`:
+Rebuild dari Containerfile utama, bukan stacking `FROM ghcr.io/varkir/comfyui:rocm`:
 
 ```bash
 scripts/build.sh --no-cache                        # ComfyUI master terbaru
@@ -126,7 +124,7 @@ podman run -d \
   -v /mnt/varkir/Podman/ComfyUI/output:/opt/ComfyUI/output:z \
   -v /mnt/varkir/Podman/ComfyUI/input:/opt/ComfyUI/input:z \
   -v /mnt/varkir/Podman/ComfyUI/wildcards:/opt/ComfyUI/custom_nodes/comfyui-impact-pack/custom_wildcards:z \
-  localhost/comfyui:rocm
+  ghcr.io/varkir/comfyui:rocm
 ```
 
 Catatan penting:
@@ -171,16 +169,12 @@ Jika ada yang gagal: perbaiki, rebuild, ulangi verifikasi. Jangan lanjut ke publ
    ```bash
    gh auth token | podman login ghcr.io -u varkir --password-stdin
    ```
-3. Tag & push:
+3. Build & push:
    ```bash
-   PUSH=1 SHA_TAG=1 scripts/build.sh
+   PUSH=1 scripts/build.sh
    ```
-   menghasilkan `ghcr.io/varkir/comfyui:rocm` dan `ghcr.io/varkir/comfyui:rocm-<shortsha-comfyui>`.
-4. Package lama `ghcr.io/varkir/comfyui` (versi Maret 2026, tidak tertaut ke repo) **dihapus atas permintaan user** sebelum push pertama:
-   ```bash
-   gh api -X DELETE /user/packages/container/comfyui
-   ```
-   Setelah push, set visibilitas package ke Public di GitHub dan pastikan package tertaut ke repo.
+   menghasilkan satu tag saja: `ghcr.io/varkir/comfyui:rocm`.
+4. Package lama `ghcr.io/varkir/comfyui` (versi Maret 2026) sudah dihapus pada 25 Oktober 2026. Setelah push pertama, set visibilitas package ke Public di GitHub dan pastikan package tertaut ke repo `ComfyUI-ROCM`.
 5. Build di GitHub Actions **tidak dipakai**: image ±30 GB, melebihi ruang disk runner standar. Build & push dilakukan dari server lokal.
 
 ## Larangan

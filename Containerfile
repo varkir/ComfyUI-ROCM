@@ -3,10 +3,10 @@
 # Build dari root repo ini (context kecil, tanpa models/ dll.):
 #   scripts/build.sh
 # atau manual:
-#   podman build -t localhost/comfyui:rocm .
+#   podman build -t ghcr.io/varkir/comfyui:rocm .
 #
 # Selalu dibangun dari image ROCm PyTorch upstream, tidak pernah dari
-# localhost/comfyui:rocm sendiri, agar layer tidak menumpuk setiap rebuild.
+# ghcr.io/varkir/comfyui:rocm sendiri, agar layer tidak menumpuk setiap rebuild.
 ARG BASE_IMAGE=docker.io/rocm/pytorch:rocm7.2.4_ubuntu24.04_py3.12_pytorch_release_2.9.1
 FROM ${BASE_IMAGE}
 
