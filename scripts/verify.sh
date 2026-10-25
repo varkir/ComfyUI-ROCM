@@ -25,7 +25,9 @@ state="$(podman inspect -f '{{.State.Status}} {{.RestartCount}}' "$NAME" 2>/dev/
 [[ "$state" == "running 0" ]] && ok "container running" || fail "status container: $state"
 
 # 2. Log bersih
-errors="$(podman logs "$NAME" 2>&1 | grep -E 'Traceback|ImportError|ModuleNotFoundError|IMPORT FAILED' || true)"
+# Hanya log sejak start terakhir (podman logs menyimpan log sebelum restart)
+since="$(podman inspect -f '{{.State.StartedAt.Format "2006-01-02T15:04:05Z07:00"}}' "$NAME" 2>/dev/null || true)"
+errors="$(podman logs ${since:+--since "$since"} "$NAME" 2>&1 | grep -E 'Traceback|ImportError|ModuleNotFoundError|IMPORT FAILED' || true)"
 [[ -z "$errors" ]] && ok "log tanpa error import" || { fail "log berisi error:"; echo "$errors" | sed 's/^/        /'; }
 
 # 3. GPU dari torch
