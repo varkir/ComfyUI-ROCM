@@ -65,7 +65,7 @@ Semua script: `#!/usr/bin/env bash` + `set -euo pipefail`, idempoten (aman dijal
 
 ## 1. Folder host (`scripts/setup-dirs.sh`)
 
-Membuat `models custom_nodes user output input temp wildcards` di `/mnt/varkir/Podman/ComfyUI` beserta subfolder `models/` standar ComfyUI.
+Membuat `models custom_nodes user output input wildcards` di `/mnt/varkir/Podman/ComfyUI` beserta subfolder `models/` standar ComfyUI.
 
 - Daftar subfolder harus sesuai `folder_paths.py` di versi ComfyUI yang dipakai. Cek dari image:
   `podman run --rm --entrypoint python localhost/comfyui:rocm -c "import folder_paths; print(sorted(folder_paths.folder_names_and_paths))"`.
@@ -125,7 +125,6 @@ podman run -d \
   -v /mnt/varkir/Podman/ComfyUI/user:/opt/ComfyUI/user:z \
   -v /mnt/varkir/Podman/ComfyUI/output:/opt/ComfyUI/output:z \
   -v /mnt/varkir/Podman/ComfyUI/input:/opt/ComfyUI/input:z \
-  -v /mnt/varkir/Podman/ComfyUI/temp:/opt/ComfyUI/temp:z \
   -v /mnt/varkir/Podman/ComfyUI/wildcards:/opt/ComfyUI/custom_nodes/comfyui-impact-pack/custom_wildcards:z \
   localhost/comfyui:rocm
 ```

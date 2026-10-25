@@ -4,7 +4,7 @@ set -euo pipefail
 
 BASE="${BASE:-/mnt/varkir/Podman/ComfyUI}"
 
-mkdir -p "$BASE"/{models,custom_nodes,user,output,input,temp,wildcards}
+mkdir -p "$BASE"/{models,custom_nodes,user,output,input,wildcards}
 
 # Subfolder models standar ComfyUI (folder_paths.py)
 for d in checkpoints clip clip_vision configs controlnet diffusers diffusion_models \

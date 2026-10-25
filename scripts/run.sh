@@ -41,7 +41,6 @@ args=(
   -v "$BASE/user:/opt/ComfyUI/user:z"
   -v "$BASE/output:/opt/ComfyUI/output:z"
   -v "$BASE/input:/opt/ComfyUI/input:z"
-  -v "$BASE/temp:/opt/ComfyUI/temp:z"
 )
 
 if [[ -n "$NETWORK" ]]; then

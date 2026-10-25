@@ -16,7 +16,7 @@ echo "Verifikasi container '$NAME' ($URL)"
 
 # Tunggu server siap (maks. 3 menit)
 for _ in $(seq 1 90); do
-  curl -fsS "$URL/system_stats" >/dev/null 2>&1 && break
+  curl -fsS -m 5 "$URL/system_stats" >/dev/null 2>&1 && break
   sleep 2
 done
 
@@ -36,7 +36,7 @@ else
 fi
 
 # 4. /system_stats melaporkan device GPU
-if stats="$(curl -fsS "$URL/system_stats")" && \
+if stats="$(curl -fsS -m 5 "$URL/system_stats")" && \
    dev="$(python3 -c 'import json,sys; d=json.loads(sys.argv[1])["devices"][0]; assert d["type"]!="cpu"; print(d["type"], d["name"])' "$stats" 2>&1)"; then
   ok "system_stats: $dev"
 else
@@ -46,7 +46,7 @@ fi
 # 5. Manager merespons (manager bawaan v4 atau custom node lama)
 mgr=""
 for path in /v2/manager/version /api/v2/manager/version /manager/version /api/manager/version; do
-  if out="$(curl -fsS "$URL$path" 2>/dev/null)"; then mgr="$path -> $out"; break; fi
+  if out="$(curl -fsS -m 5 "$URL$path" 2>/dev/null)"; then mgr="$path -> $out"; break; fi
 done
 [[ -n "$mgr" ]] && ok "manager: $mgr" || fail "endpoint manager tidak merespons"
 
