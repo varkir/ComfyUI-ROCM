@@ -23,6 +23,7 @@ fi
 
 args=(
   --name "$NAME"
+  --init
   --dns 8.8.8.8 --dns 1.1.1.1
   --shm-size=10g --memory=10G
   --device=/dev/kfd --device=/dev/dri

@@ -106,6 +106,7 @@ Isi utama (lihat script untuk versi lengkap):
 ```bash
 podman run -d \
   --name comfyui \
+  --init \
   --network varkir --ip 10.20.0.4 \
   --dns 8.8.8.8 --dns 1.1.1.1 \
   --shm-size=10g --memory=10G \
@@ -140,7 +141,11 @@ Catatan penting:
 
 ### Manager: pilih satu
 
-Image menyediakan **manager bawaan** (`--enable-manager` + `comfyui_manager`). Jika `custom_nodes/ComfyUI-Manager` (versi custom node lama, V3.x) juga ada, dua manager bisa bentrok. Laporkan ke user dan biarkan user yang memilih; jangan dihapus sendiri.
+Image menyediakan **manager bawaan** (`--enable-manager` + `comfyui_manager` V4). Jika `custom_nodes/ComfyUI-Manager` (custom node lama, V3.x) juga ada, manager bawaan memblokirnya (log: `Blocked by policy: /opt/ComfyUI/custom_nodes/ComfyUI-Manager`), jadi tidak bentrok. Folder itu boleh dibiarkan; jangan dihapus tanpa izin user.
+
+### Isi `custom_nodes` yang bukan custom node
+
+ComfyUI mencoba memuat **setiap** folder di `custom_nodes`. Folder tanpa `__init__.py` menghasilkan `IMPORT FAILED`. Contoh yang pernah terjadi: `custom_nodes/ComfyUI-Impact-Pack` (sisa mount wildcards lama) dan `custom_nodes/wildcards`. File wildcard tempatnya di `$BASE/wildcards`, bukan di `custom_nodes`.
 
 ## 4. Definition of Done ("bekerja 100%")
 
@@ -150,7 +155,7 @@ Image menyediakan **manager bawaan** (`--enable-manager` + `comfyui_manager`). J
 2. Log tidak mengandung `Traceback`, `ImportError`, `ModuleNotFoundError`, atau `IMPORT FAILED`.
 3. GPU terdeteksi: `torch.cuda.is_available()` true, `torch.version.hip` tidak `None`, nama device tercetak.
 4. `GET /system_stats` mengembalikan JSON dengan device bertipe `cuda` (ROCm), bukan `cpu`.
-5. Manager aktif: endpoint `/api/manager/version` (atau `/manager/version`) merespons.
+5. Manager aktif: endpoint `/v2/manager/version` (manager bawaan V4) merespons.
 6. `comfy_kitchen` bisa di-import.
 7. `cv2` (OpenCV) bisa di-import.
 8. Versi source tercatat: `git -C /opt/ComfyUI log -1` dan `manager_requirements.txt` ada.
