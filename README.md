@@ -61,6 +61,87 @@ Contoh menjalankan image publik di mesin lain:
 IMAGE=ghcr.io/varkir/comfyui:rocm NETWORK= BASE=$HOME/comfyui scripts/run.sh
 ```
 
+## Menjalankan di Linux
+
+Cara paling mudah adalah lewat `scripts/run.sh` di atas. Tanpa script, di distro apa pun (Debian, Ubuntu, Fedora, Arch, …):
+
+```bash
+# 1. Driver: kernel bawaan distro sudah membawa amdgpu. Cek perangkat GPU:
+ls -l /dev/kfd /dev/dri/render*
+
+# 2. Akses GPU tanpa root (sekali saja, lalu logout/login):
+sudo usermod -aG video,render "$USER"
+
+# 3. Pasang Podman (contoh Debian/Ubuntu; Fedora: sudo dnf install podman)
+sudo apt install podman
+
+# 4. Folder data
+mkdir -p ~/comfyui/{models,custom_nodes,user,input,output,temp}
+
+# 5. Jalankan
+podman run -d --name comfyui \
+  --device=/dev/kfd --device=/dev/dri \
+  --group-add keep-groups \
+  --security-opt label=disable \
+  --shm-size=8g \
+  -p 8188:8188 \
+  -e HSA_OVERRIDE_GFX_VERSION=10.3.0 \
+  -e CLI_ARGS="--lowvram --enable-manager" \
+  -v ~/comfyui/models:/opt/ComfyUI/models:z \
+  -v ~/comfyui/custom_nodes:/opt/ComfyUI/custom_nodes:z \
+  -v ~/comfyui/user:/opt/ComfyUI/user:z \
+  -v ~/comfyui/input:/opt/ComfyUI/input:z \
+  -v ~/comfyui/output:/opt/ComfyUI/output:z \
+  -v ~/comfyui/temp:/opt/ComfyUI/temp:z \
+  ghcr.io/varkir/comfyui:rocm
+
+podman logs -f comfyui      # tunggu "To see the GUI go to"
+```
+
+Buka `http://localhost:8188`.
+
+- **Docker** juga bisa: ganti `podman` dengan `docker` dan `--group-add keep-groups` dengan `--group-add video --group-add render`.
+- **GPU RDNA2 lain** (RX 6600/6800/6900, gfx103x) memakai override yang sama, `10.3.0`. GPU RDNA3 (RX 7000) tidak perlu override: hapus `-e HSA_OVERRIDE_GFX_VERSION`.
+- Jika memakai SELinux (Fedora), opsi `:z` pada volume diperlukan.
+
+## Menjalankan di Windows
+
+**Perhatian:** ROCm di Windows hanya tersedia lewat **WSL2**, dan AMD hanya mendukung GPU tertentu di WSL (terutama RDNA3/RDNA4, mis. RX 7900 XTX/XT/GRE, RX 9070). **RX 6700 XT (RDNA2) tidak didukung ROCm di WSL2**, jadi image ini tidak bisa memakai GPU tersebut di Windows. Pilihan untuk RX 6700 XT:
+
+1. **Dual-boot / mesin Linux** (disarankan), lalu ikuti bagian Linux.
+2. Tetap di Windows tanpa container: ComfyUI Desktop / portable dengan backend DirectML atau ZLUDA (bukan bagian repo ini).
+
+Untuk GPU yang **didukung ROCm di WSL2**:
+
+1. Pasang driver AMD Adrenalin terbaru yang mendukung WSL.
+2. Pasang WSL2 + Ubuntu 24.04 dari PowerShell (Admin):
+   ```powershell
+   wsl --install -d Ubuntu-24.04
+   ```
+3. Di dalam Ubuntu WSL, pasang ROCm untuk WSL sesuai panduan AMD ("Install Radeon software for WSL with ROCm") lalu cek dengan `rocminfo`.
+4. Pasang Podman di WSL (`sudo apt install podman`) dan jalankan. Di WSL, GPU muncul sebagai `/dev/dxg`, bukan `/dev/kfd`:
+   ```bash
+   mkdir -p ~/comfyui/{models,custom_nodes,user,input,output,temp}
+   podman run -d --name comfyui \
+     --device=/dev/dxg \
+     -v /usr/lib/wsl/lib:/usr/lib/wsl/lib:ro \
+     -e LD_LIBRARY_PATH=/usr/lib/wsl/lib \
+     --shm-size=8g \
+     -p 8188:8188 \
+     -e CLI_ARGS="--enable-manager" \
+     -v ~/comfyui/models:/opt/ComfyUI/models \
+     -v ~/comfyui/custom_nodes:/opt/ComfyUI/custom_nodes \
+     -v ~/comfyui/user:/opt/ComfyUI/user \
+     -v ~/comfyui/input:/opt/ComfyUI/input \
+     -v ~/comfyui/output:/opt/ComfyUI/output \
+     -v ~/comfyui/temp:/opt/ComfyUI/temp \
+     ghcr.io/varkir/comfyui:rocm
+   ```
+   Jangan set `HSA_OVERRIDE_GFX_VERSION` untuk GPU RDNA3/RDNA4.
+5. Buka `http://localhost:8188` dari browser Windows.
+
+Simpan folder data di filesystem WSL (`~/comfyui`), bukan di `/mnt/c/...`; akses ke drive Windows jauh lebih lambat saat memuat model. Dukungan GPU di WSL bergantung pada versi driver AMD dan ROCm; jika `torch.cuda.is_available()` bernilai `False`, cek ulang daftar GPU yang didukung AMD.
+
 ## Folder data
 
 | Host (`$BASE/…`) | Container |
