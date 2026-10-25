@@ -14,9 +14,13 @@ REPO_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 IMAGE="${IMAGE:-ghcr.io/varkir/comfyui:rocm}"
 COMFYUI_REF="${COMFYUI_REF:-master}"
 PUSH="${PUSH:-0}"
+SOURCE_URL="${SOURCE_URL:-https://github.com/varkir/ComfyUI-ROCM}"
 
+# GHCR menautkan package ke repo dari annotation manifest, bukan dari LABEL
 podman build \
   --build-arg COMFYUI_REF="$COMFYUI_REF" \
+  --annotation "org.opencontainers.image.source=$SOURCE_URL" \
+  --annotation "org.opencontainers.image.licenses=GPL-3.0" \
   -t "$IMAGE" \
   -f "$REPO_DIR/Containerfile" \
   "$@" \
